@@ -49,7 +49,7 @@ st.sidebar.subheader("Compound Selection")
 selected_compounds = st.sidebar.multiselect(
     "Select Compounds:",
     compound_options,
-    default=compound_options[:3] if len(compound_options) >= 3 else compound_options,
+    default=["Levosimendan"] if "Levosimendan" in compound_options else compound_options[:1],
     help="Select one or more compounds to analyze"
 )
 
