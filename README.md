@@ -20,32 +20,10 @@ The application uses minimal dependencies optimized for cloud deployment:
 
 ## Deployment to Streamlit Community Cloud
 
-### Quick Deploy Steps:
 1. Fork or clone this repository
 2. Connect your GitHub repository to Streamlit Community Cloud
 3. Set the main file path to `app.py`
-4. Deploy
-
-### Troubleshooting Common Issues:
-
-**Error: "dial tcp 127.0.0.1:8501: connect: connection refused"**
-
-This error occurs when the platform detects multiple dependency files. To fix:
-
-1. In your Streamlit Community Cloud dashboard, go to "Advanced settings"
-2. Set Python version to 3.9 or 3.10
-3. If the error persists, temporarily rename `uv.lock` to `uv.lock.bak` in your repository
-4. Create a simple `requirements.txt` file with:
-   ```
-   streamlit
-   pandas
-   plotly
-   numpy
-   ```
-5. Commit and push the changes
-6. Redeploy the app
-
-The platform will automatically detect and use the standard requirements.txt format.
+4. Deploy directly - no additional configuration needed
 
 ## Local Development
 

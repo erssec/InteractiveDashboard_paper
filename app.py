@@ -284,6 +284,43 @@ else:
 # Display the plot
 st.plotly_chart(fig, use_container_width=True)
 
+# Display styling guide when multiple compounds are selected
+if len(selected_compounds) > 1:
+    st.markdown("---")
+    st.subheader("Styling Guide")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Measurements (Colors):**")
+        for measurement in selected_measurements:
+            color = measurement_colors[measurement]
+            st.markdown(f"<span style='color: {color}; font-weight: bold;'>●</span> {measurement}", unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("**Compounds (Lines & Markers):**")
+        for compound in selected_compounds:
+            style = compound_styles[compound]
+            line_desc = {
+                'solid': '━━━',
+                'dash': '╌╌╌',
+                'dot': '┅┅┅',
+                'dashdot': '╌┅╌'
+            }
+            marker_desc = {
+                'circle': '●',
+                'square': '■',
+                'diamond': '♦',
+                'triangle-up': '▲',
+                'star': '★',
+                'cross': '✚'
+            }
+            line_style = line_desc.get(style['line_dash'], '━━━')
+            marker_style = marker_desc.get(style['marker_symbol'], '●')
+            st.markdown(f"{marker_style} {line_style} {compound}")
+    
+    st.markdown("*Each line combines a measurement color with a compound line style and marker.*")
+
 # Summary information
 st.markdown("---")
 col1, col2, col3 = st.columns(3)
@@ -356,4 +393,4 @@ if show_data:
 
 # Footer
 st.markdown("---")
-st.markdown("*Compound Analysis Dashboard - Built by Ehsan Razaghi with Streamlit, Plotly, and Replit*")
+st.markdown("*Compound Analysis Dashboard - Built with Streamlit and Plotly*")
