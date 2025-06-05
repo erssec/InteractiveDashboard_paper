@@ -42,21 +42,14 @@ selected_readout = st.sidebar.selectbox(
 # Filter data by read-out
 readout_data = data[data['read-out'] == selected_readout]
 
-# 2. Compound selection with search
+# 2. Compound selection
 compound_options = sorted(readout_data['compound'].unique())
 st.sidebar.subheader("Compound Selection")
 
-# Search functionality for compounds
-search_term = st.sidebar.text_input("Search compounds:", "")
-if search_term:
-    filtered_compounds = [comp for comp in compound_options if search_term.lower() in comp.lower()]
-else:
-    filtered_compounds = compound_options
-
 selected_compounds = st.sidebar.multiselect(
     "Select Compounds:",
-    filtered_compounds,
-    default=filtered_compounds[:3] if len(filtered_compounds) >= 3 else filtered_compounds,
+    compound_options,
+    default=compound_options[:3] if len(compound_options) >= 3 else compound_options,
     help="Select one or more compounds to analyze"
 )
 
@@ -97,7 +90,7 @@ if len(available_screens) > 1:
         rows=1, 
         cols=len(available_screens),
         subplot_titles=[f"Screen {screen}" for screen in available_screens],
-        shared_yaxes=True
+        shared_yaxes=False
     )
     
     for col_idx, screen in enumerate(available_screens):
@@ -118,7 +111,7 @@ if len(available_screens) > 1:
                     
                     fig.add_trace(
                         go.Scatter(
-                            x=compound_measurement_data['concentration'],
+                            x=compound_measurement_data['concentration'].astype(str),
                             y=compound_measurement_data['average'],
                             error_y=dict(
                                 type='data',
@@ -152,8 +145,7 @@ if len(available_screens) > 1:
     # Update x and y axis labels
     for i in range(1, len(available_screens) + 1):
         fig.update_xaxes(title_text="Concentration", row=1, col=i)
-        if i == 1:
-            fig.update_yaxes(title_text="% Change", row=1, col=i)
+        fig.update_yaxes(title_text="% Change", row=1, col=i)
 
 else:
     # Single screen - create regular plot
@@ -177,7 +169,7 @@ else:
                 
                 fig.add_trace(
                     go.Scatter(
-                        x=compound_measurement_data['concentration'],
+                        x=compound_measurement_data['concentration'].astype(str),
                         y=compound_measurement_data['average'],
                         error_y=dict(
                             type='data',
