@@ -97,6 +97,9 @@ if len(available_screens) > 1:
         shared_yaxes=False
     )
     
+    # Track which trace names have been added to legend
+    legend_traces = set()
+    
     for col_idx, screen in enumerate(available_screens):
         screen_data = filtered_data[filtered_data['screen'] == screen]
         
@@ -118,6 +121,11 @@ if len(available_screens) > 1:
                     x_positions = [all_concentrations.index(c) for c in concentrations]
                     conc_labels = [str(c) for c in concentrations]
                     
+                    # Show legend if this trace hasn't been added to legend yet
+                    show_in_legend = trace_name not in legend_traces
+                    if show_in_legend:
+                        legend_traces.add(trace_name)
+                    
                     fig.add_trace(
                         go.Scatter(
                             x=x_positions,
@@ -131,7 +139,7 @@ if len(available_screens) > 1:
                             name=trace_name,
                             line=dict(color=measurement_colors[measurement]),
                             legendgroup=measurement,
-                            showlegend=(col_idx == 0),  # Only show legend for first subplot
+                            showlegend=show_in_legend,
                             customdata=conc_labels,
                             hovertemplate='<b>%{fullData.name}</b><br>' +
                                         'Concentration: %{customdata}<br>' +
