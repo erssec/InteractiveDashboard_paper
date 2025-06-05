@@ -8,7 +8,6 @@ from data_generator import generate_sample_data
 # Configure the page
 st.set_page_config(
     page_title="Interactive Dashboard",
-    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -18,11 +17,11 @@ if 'data' not in st.session_state:
     st.session_state.data = generate_sample_data()
 
 # Main title
-st.title("📊 Interactive Dashboard")
+st.title("Interactive Dashboard")
 st.markdown("---")
 
 # Sidebar controls
-st.sidebar.header("🎛️ Dashboard Controls")
+st.sidebar.header("Dashboard Controls")
 
 # Dataset selection
 dataset_option = st.sidebar.selectbox(
@@ -42,7 +41,7 @@ plot_type = st.sidebar.selectbox(
 current_data = st.session_state.data[dataset_option.lower().replace(' ', '_')]
 
 # Dynamic controls based on dataset
-st.sidebar.subheader("📈 Plot Parameters")
+st.sidebar.subheader("Plot Parameters")
 
 # Initialize default values
 x_axis = current_data.columns.tolist()[0] if len(current_data.columns) > 0 else None
@@ -77,7 +76,7 @@ elif dataset_option == "Weather Data":
     color_by = "city"
 
 # Additional plot customization
-st.sidebar.subheader("🎨 Appearance")
+st.sidebar.subheader("Appearance")
 plot_title = st.sidebar.text_input("Plot Title:", value=f"{dataset_option} - {plot_type}")
 plot_height = st.sidebar.slider("Plot Height:", 400, 800, 600)
 show_grid = st.sidebar.checkbox("Show Grid", value=True)
@@ -94,7 +93,7 @@ elif dataset_option == "Weather Data" and len(city_filter) > 0:
 col1, col2 = st.columns([3, 1])
 
 with col1:
-    st.subheader(f"📊 {plot_title}")
+    st.subheader(f"{plot_title}")
     
     # Create the plot based on selection
     fig = None
@@ -197,7 +196,7 @@ with col1:
         st.info("Please check your parameter selections and try again.")
 
 with col2:
-    st.subheader("📋 Data Summary")
+    st.subheader("Data Summary")
     
     # Display data summary
     st.write(f"**Dataset:** {dataset_option}")
@@ -213,7 +212,7 @@ with col2:
 
 # Data preview section
 st.markdown("---")
-st.subheader("🔍 Data Preview")
+st.subheader("Data Preview")
 
 # Show/hide data preview
 show_data = st.checkbox("Show raw data", value=False)
@@ -253,9 +252,9 @@ if show_data:
 
 # Footer
 st.markdown("---")
-st.markdown("*Built with Streamlit and Plotly* 🚀")
+st.markdown("*Built with Streamlit and Plotly*")
 
 # Refresh button
-if st.sidebar.button("🔄 Refresh Data"):
+if st.sidebar.button("Refresh Data"):
     st.session_state.data = generate_sample_data()
     st.rerun()
