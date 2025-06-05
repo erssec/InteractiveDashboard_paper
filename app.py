@@ -24,8 +24,94 @@ def load_data():
 # Load data
 data = load_data()
 
-# Main title
-st.title("Compound Analysis Dashboard")
+# Header with title and theme toggle
+col1, col2 = st.columns([4, 1])
+
+with col1:
+    st.title("Compound Analysis Dashboard")
+
+with col2:
+    # Theme toggle switch
+    st.write("")  # Add some spacing
+    dark_mode = st.toggle("Dark Mode", value=False, key="theme_toggle")
+
+# Apply custom CSS based on theme selection
+if dark_mode:
+    st.markdown("""
+    <style>
+    .stApp {
+        background-color: #0e1117;
+        color: #fafafa;
+    }
+    .stSelectbox > div > div {
+        background-color: #262730;
+        color: #fafafa;
+    }
+    .stMultiSelect > div > div {
+        background-color: #262730;
+        color: #fafafa;
+    }
+    .stCheckbox > label {
+        color: #fafafa;
+    }
+    .stTextInput > div > div > input {
+        background-color: #262730;
+        color: #fafafa;
+    }
+    .stSlider > div > div > div {
+        color: #fafafa;
+    }
+    .stDataFrame {
+        background-color: #262730;
+    }
+    div[data-testid="stSidebar"] {
+        background-color: #262730;
+    }
+    div[data-testid="stSidebar"] .stSelectbox > div > div {
+        background-color: #0e1117;
+    }
+    div[data-testid="stSidebar"] .stMultiSelect > div > div {
+        background-color: #0e1117;
+    }
+    div[data-testid="stSidebar"] .stTextInput > div > div > input {
+        background-color: #0e1117;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <style>
+    .stApp {
+        background-color: #ffffff;
+        color: #262730;
+    }
+    .stSelectbox > div > div {
+        background-color: #ffffff;
+        color: #262730;
+    }
+    .stMultiSelect > div > div {
+        background-color: #ffffff;
+        color: #262730;
+    }
+    .stCheckbox > label {
+        color: #262730;
+    }
+    .stTextInput > div > div > input {
+        background-color: #ffffff;
+        color: #262730;
+    }
+    .stSlider > div > div > div {
+        color: #262730;
+    }
+    .stDataFrame {
+        background-color: #ffffff;
+    }
+    div[data-testid="stSidebar"] {
+        background-color: #f0f2f6;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 st.markdown("---")
 
 # Sidebar controls
@@ -143,7 +229,11 @@ if len(available_screens) > 1:
                         col=col_idx + 1
                     )
     
-    # Update layout
+    # Update layout with theme colors
+    plot_bgcolor = '#0e1117' if dark_mode else '#ffffff'
+    paper_bgcolor = '#0e1117' if dark_mode else '#ffffff'
+    font_color = '#fafafa' if dark_mode else '#262730'
+    
     fig.update_layout(
         height=600,
         title_text=f"{selected_readout.title()} Read-out Analysis",
@@ -154,7 +244,10 @@ if len(available_screens) > 1:
             y=1,
             xanchor="left",
             x=1.02
-        )
+        ),
+        plot_bgcolor=plot_bgcolor,
+        paper_bgcolor=paper_bgcolor,
+        font=dict(color=font_color)
     )
     
     # Update x and y axis labels
@@ -204,7 +297,11 @@ else:
                     )
                 )
     
-    # Update layout
+    # Update layout with theme colors
+    plot_bgcolor = '#0e1117' if dark_mode else '#ffffff'
+    paper_bgcolor = '#0e1117' if dark_mode else '#ffffff'
+    font_color = '#fafafa' if dark_mode else '#262730'
+    
     fig.update_layout(
         height=600,
         title=f"{selected_readout.title()} Read-out Analysis - Screen {screen}",
@@ -222,7 +319,10 @@ else:
             y=1,
             xanchor="left",
             x=1.02
-        )
+        ),
+        plot_bgcolor=plot_bgcolor,
+        paper_bgcolor=paper_bgcolor,
+        font=dict(color=font_color)
     )
 
 # Display the plot
