@@ -393,4 +393,4 @@ if show_data:
 
 # Footer
 st.markdown("---")
-st.markdown("*Compound Analysis Dashboard - Built with Streamlit and Plotly*")
+st.markdown("*Compound Analysis Dashboard - Built by Ehsan Razaghi with Streamlit, Plotly, and Replit*")
