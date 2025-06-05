@@ -111,6 +111,16 @@ concentration_labels = [str(c) for c in all_concentrations]
 colors = px.colors.qualitative.Set1[:len(selected_measurements)]
 measurement_colors = dict(zip(selected_measurements, colors))
 
+# Create style mapping for compounds (different line styles and markers)
+line_styles = ['solid', 'dash', 'dot', 'dashdot']
+marker_symbols = ['circle', 'square', 'diamond', 'triangle-up', 'star', 'cross']
+compound_styles = {}
+for i, compound in enumerate(selected_compounds):
+    compound_styles[compound] = {
+        'line_dash': line_styles[i % len(line_styles)],
+        'marker_symbol': marker_symbols[i % len(marker_symbols)]
+    }
+
 # Main content area
 if len(available_screens) > 1:
     # Multiple screens - create subplots
@@ -161,8 +171,15 @@ if len(available_screens) > 1:
                             ),
                             mode='lines+markers',
                             name=trace_name,
-                            line=dict(color=measurement_colors[measurement]),
-                            legendgroup=measurement,
+                            line=dict(
+                                color=measurement_colors[measurement],
+                                dash=compound_styles[compound]['line_dash']
+                            ),
+                            marker=dict(
+                                symbol=compound_styles[compound]['marker_symbol'],
+                                size=8
+                            ),
+                            legendgroup=f"{measurement}_{compound}",
                             showlegend=show_in_legend,
                             customdata=conc_labels,
                             hovertemplate='<b>%{fullData.name}</b><br>' +
@@ -232,7 +249,14 @@ else:
                         ),
                         mode='lines+markers',
                         name=trace_name,
-                        line=dict(color=measurement_colors[measurement])
+                        line=dict(
+                            color=measurement_colors[measurement],
+                            dash=compound_styles[compound]['line_dash']
+                        ),
+                        marker=dict(
+                            symbol=compound_styles[compound]['marker_symbol'],
+                            size=8
+                        )
                     )
                 )
     
@@ -259,6 +283,43 @@ else:
 
 # Display the plot
 st.plotly_chart(fig, use_container_width=True)
+
+# Display styling guide when multiple compounds are selected
+if len(selected_compounds) > 1:
+    st.markdown("---")
+    st.subheader("Styling Guide")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Measurements (Colors):**")
+        for measurement in selected_measurements:
+            color = measurement_colors[measurement]
+            st.markdown(f"<span style='color: {color}; font-weight: bold;'>●</span> {measurement}", unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("**Compounds (Lines & Markers):**")
+        for compound in selected_compounds:
+            style = compound_styles[compound]
+            line_desc = {
+                'solid': '━━━',
+                'dash': '╌╌╌',
+                'dot': '┅┅┅',
+                'dashdot': '╌┅╌'
+            }
+            marker_desc = {
+                'circle': '●',
+                'square': '■',
+                'diamond': '♦',
+                'triangle-up': '▲',
+                'star': '★',
+                'cross': '✚'
+            }
+            line_style = line_desc.get(style['line_dash'], '━━━')
+            marker_style = marker_desc.get(style['marker_symbol'], '●')
+            st.markdown(f"{marker_style} {line_style} {compound}")
+    
+    st.markdown("*Each line combines a measurement color with a compound line style and marker.*")
 
 # Summary information
 st.markdown("---")
