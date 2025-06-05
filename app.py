@@ -44,6 +44,13 @@ current_data = st.session_state.data[dataset_option.lower().replace(' ', '_')]
 # Dynamic controls based on dataset
 st.sidebar.subheader("📈 Plot Parameters")
 
+# Initialize default values
+x_axis = current_data.columns.tolist()[0] if len(current_data.columns) > 0 else None
+y_axis = current_data.columns.tolist()[1] if len(current_data.columns) > 1 else current_data.columns.tolist()[0]
+color_by = "None"
+stock_filter = []
+city_filter = []
+
 if dataset_option == "Sales Data":
     x_axis = st.sidebar.selectbox("X-Axis:", current_data.columns.tolist(), index=0)
     y_axis = st.sidebar.selectbox("Y-Axis:", current_data.columns.tolist(), index=1)
@@ -78,9 +85,9 @@ show_grid = st.sidebar.checkbox("Show Grid", value=True)
 # Filter data based on selections
 filtered_data = current_data.copy()
 
-if dataset_option == "Stock Prices" and stock_filter:
+if dataset_option == "Stock Prices" and len(stock_filter) > 0:
     filtered_data = filtered_data[filtered_data['symbol'].isin(stock_filter)]
-elif dataset_option == "Weather Data" and city_filter:
+elif dataset_option == "Weather Data" and len(city_filter) > 0:
     filtered_data = filtered_data[filtered_data['city'].isin(city_filter)]
 
 # Main content area
@@ -180,9 +187,7 @@ with col1:
             fig.update_layout(
                 showlegend=True,
                 xaxis_showgrid=show_grid,
-                yaxis_showgrid=show_grid,
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)'
+                yaxis_showgrid=show_grid
             )
             
         st.plotly_chart(fig, use_container_width=True)
