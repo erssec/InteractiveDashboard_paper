@@ -3,235 +3,255 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
-from data_generator import generate_sample_data
+from plotly.subplots import make_subplots
 
 # Configure the page
 st.set_page_config(
-    page_title="Interactive Dashboard",
+    page_title="Compound Analysis Dashboard",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Initialize session state for data persistence
-if 'data' not in st.session_state:
-    st.session_state.data = generate_sample_data()
+@st.cache_data
+def load_data():
+    """Load and prepare the experimental data."""
+    df = pd.read_csv('data/pivot_table_of_results.csv')
+    # Drop the unnamed index column
+    if 'Unnamed: 0' in df.columns:
+        df = df.drop(columns=['Unnamed: 0'])
+    return df
+
+# Load data
+data = load_data()
 
 # Main title
-st.title("Interactive Dashboard")
+st.title("Compound Analysis Dashboard")
 st.markdown("---")
 
 # Sidebar controls
-st.sidebar.header("Dashboard Controls")
+st.sidebar.header("Analysis Parameters")
 
-# Dataset selection
-dataset_option = st.sidebar.selectbox(
-    "Select Dataset:",
-    ["Sales Data", "Stock Prices", "Weather Data"],
-    help="Choose which dataset to visualize"
+# 1. Read-out selection
+readout_options = sorted(data['read-out'].unique())
+selected_readout = st.sidebar.selectbox(
+    "Read-out Type:",
+    readout_options,
+    help="Select calcium or voltage read-out"
 )
 
-# Plot type selection
-plot_type = st.sidebar.selectbox(
-    "Select Plot Type:",
-    ["Scatter Plot", "Line Chart", "Bar Chart", "Histogram", "Box Plot"],
-    help="Choose the type of visualization"
+# Filter data by read-out
+readout_data = data[data['read-out'] == selected_readout]
+
+# 2. Compound selection with search
+compound_options = sorted(readout_data['compound'].unique())
+st.sidebar.subheader("Compound Selection")
+
+# Search functionality for compounds
+search_term = st.sidebar.text_input("Search compounds:", "")
+if search_term:
+    filtered_compounds = [comp for comp in compound_options if search_term.lower() in comp.lower()]
+else:
+    filtered_compounds = compound_options
+
+selected_compounds = st.sidebar.multiselect(
+    "Select Compounds:",
+    filtered_compounds,
+    default=filtered_compounds[:3] if len(filtered_compounds) >= 3 else filtered_compounds,
+    help="Select one or more compounds to analyze"
 )
 
-# Get the selected dataset
-current_data = st.session_state.data[dataset_option.lower().replace(' ', '_')]
+if not selected_compounds:
+    st.warning("Please select at least one compound to display data.")
+    st.stop()
 
-# Dynamic controls based on dataset
-st.sidebar.subheader("Plot Parameters")
+# Filter data by compounds
+compound_data = readout_data[readout_data['compound'].isin(selected_compounds)]
 
-# Initialize default values
-x_axis = current_data.columns.tolist()[0] if len(current_data.columns) > 0 else None
-y_axis = current_data.columns.tolist()[1] if len(current_data.columns) > 1 else current_data.columns.tolist()[0]
-color_by = "None"
-stock_filter = []
-city_filter = []
+# 3. Measurement selection
+st.sidebar.subheader("Measurements")
+measurement_options = sorted(compound_data['measurement_name'].unique())
 
-if dataset_option == "Sales Data":
-    x_axis = st.sidebar.selectbox("X-Axis:", current_data.columns.tolist(), index=0)
-    y_axis = st.sidebar.selectbox("Y-Axis:", current_data.columns.tolist(), index=1)
-    color_by = st.sidebar.selectbox("Color By:", ["None"] + current_data.columns.tolist())
-    
-elif dataset_option == "Stock Prices":
-    x_axis = st.sidebar.selectbox("X-Axis:", current_data.columns.tolist(), index=0)
-    y_axis = st.sidebar.selectbox("Y-Axis:", current_data.columns.tolist(), index=1)
-    stock_filter = st.sidebar.multiselect(
-        "Select Stocks:", 
-        current_data['symbol'].unique().tolist(),
-        default=current_data['symbol'].unique().tolist()[:3]
-    )
-    color_by = "symbol"
-    
-elif dataset_option == "Weather Data":
-    x_axis = st.sidebar.selectbox("X-Axis:", current_data.columns.tolist(), index=0)
-    y_axis = st.sidebar.selectbox("Y-Axis:", current_data.columns.tolist(), index=1)
-    city_filter = st.sidebar.multiselect(
-        "Select Cities:",
-        current_data['city'].unique().tolist(),
-        default=current_data['city'].unique().tolist()[:3]
-    )
-    color_by = "city"
+selected_measurements = []
+for measurement in measurement_options:
+    if st.sidebar.checkbox(measurement, value=(measurement in measurement_options[:3])):
+        selected_measurements.append(measurement)
 
-# Additional plot customization
-st.sidebar.subheader("Appearance")
-plot_title = st.sidebar.text_input("Plot Title:", value=f"{dataset_option} - {plot_type}")
-plot_height = st.sidebar.slider("Plot Height:", 400, 800, 600)
-show_grid = st.sidebar.checkbox("Show Grid", value=True)
+if not selected_measurements:
+    st.warning("Please select at least one measurement to display.")
+    st.stop()
 
-# Filter data based on selections
-filtered_data = current_data.copy()
+# Filter data by measurements
+filtered_data = compound_data[compound_data['measurement_name'].isin(selected_measurements)]
 
-if dataset_option == "Stock Prices" and len(stock_filter) > 0:
-    filtered_data = filtered_data[filtered_data['symbol'].isin(stock_filter)]
-elif dataset_option == "Weather Data" and len(city_filter) > 0:
-    filtered_data = filtered_data[filtered_data['city'].isin(city_filter)]
+# Get unique screens for this read-out and compound combination
+available_screens = sorted(filtered_data['screen'].unique())
+
+# Create color mapping for measurements
+colors = px.colors.qualitative.Set1[:len(selected_measurements)]
+measurement_colors = dict(zip(selected_measurements, colors))
 
 # Main content area
-col1, col2 = st.columns([3, 1])
+if len(available_screens) > 1:
+    # Multiple screens - create subplots
+    fig = make_subplots(
+        rows=1, 
+        cols=len(available_screens),
+        subplot_titles=[f"Screen {screen}" for screen in available_screens],
+        shared_yaxes=True
+    )
+    
+    for col_idx, screen in enumerate(available_screens):
+        screen_data = filtered_data[filtered_data['screen'] == screen]
+        
+        for measurement in selected_measurements:
+            measurement_data = screen_data[screen_data['measurement_name'] == measurement]
+            
+            for compound in selected_compounds:
+                compound_measurement_data = measurement_data[measurement_data['compound'] == compound]
+                
+                if not compound_measurement_data.empty:
+                    # Sort by concentration for proper line plotting
+                    compound_measurement_data = compound_measurement_data.sort_values('concentration')
+                    
+                    # Create trace name
+                    trace_name = f"{compound} - {measurement}"
+                    
+                    fig.add_trace(
+                        go.Scatter(
+                            x=compound_measurement_data['concentration'],
+                            y=compound_measurement_data['average'],
+                            error_y=dict(
+                                type='data',
+                                array=compound_measurement_data['SEM'],
+                                visible=True
+                            ),
+                            mode='lines+markers',
+                            name=trace_name,
+                            line=dict(color=measurement_colors[measurement]),
+                            legendgroup=measurement,
+                            showlegend=(col_idx == 0)  # Only show legend for first subplot
+                        ),
+                        row=1, 
+                        col=col_idx + 1
+                    )
+    
+    # Update layout
+    fig.update_layout(
+        height=600,
+        title_text=f"{selected_readout.title()} Read-out Analysis",
+        showlegend=True,
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=1,
+            xanchor="left",
+            x=1.02
+        )
+    )
+    
+    # Update x and y axis labels
+    for i in range(1, len(available_screens) + 1):
+        fig.update_xaxes(title_text="Concentration", row=1, col=i)
+        if i == 1:
+            fig.update_yaxes(title_text="% Change", row=1, col=i)
+
+else:
+    # Single screen - create regular plot
+    screen = available_screens[0]
+    screen_data = filtered_data[filtered_data['screen'] == screen]
+    
+    fig = go.Figure()
+    
+    for measurement in selected_measurements:
+        measurement_data = screen_data[screen_data['measurement_name'] == measurement]
+        
+        for compound in selected_compounds:
+            compound_measurement_data = measurement_data[measurement_data['compound'] == compound]
+            
+            if not compound_measurement_data.empty:
+                # Sort by concentration for proper line plotting
+                compound_measurement_data = compound_measurement_data.sort_values('concentration')
+                
+                # Create trace name
+                trace_name = f"{compound} - {measurement}"
+                
+                fig.add_trace(
+                    go.Scatter(
+                        x=compound_measurement_data['concentration'],
+                        y=compound_measurement_data['average'],
+                        error_y=dict(
+                            type='data',
+                            array=compound_measurement_data['SEM'],
+                            visible=True
+                        ),
+                        mode='lines+markers',
+                        name=trace_name,
+                        line=dict(color=measurement_colors[measurement])
+                    )
+                )
+    
+    # Update layout
+    fig.update_layout(
+        height=600,
+        title=f"{selected_readout.title()} Read-out Analysis - Screen {screen}",
+        xaxis_title="Concentration",
+        yaxis_title="% Change",
+        showlegend=True,
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=1,
+            xanchor="left",
+            x=1.02
+        )
+    )
+
+# Display the plot
+st.plotly_chart(fig, use_container_width=True)
+
+# Summary information
+st.markdown("---")
+col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.subheader(f"{plot_title}")
-    
-    # Create the plot based on selection
-    fig = None
-    
-    try:
-        if plot_type == "Scatter Plot":
-            if color_by != "None" and color_by in filtered_data.columns:
-                fig = px.scatter(
-                    filtered_data, 
-                    x=x_axis, 
-                    y=y_axis, 
-                    color=color_by,
-                    title=plot_title,
-                    height=plot_height
-                )
-            else:
-                fig = px.scatter(
-                    filtered_data, 
-                    x=x_axis, 
-                    y=y_axis,
-                    title=plot_title,
-                    height=plot_height
-                )
-                
-        elif plot_type == "Line Chart":
-            if color_by != "None" and color_by in filtered_data.columns:
-                fig = px.line(
-                    filtered_data, 
-                    x=x_axis, 
-                    y=y_axis, 
-                    color=color_by,
-                    title=plot_title,
-                    height=plot_height
-                )
-            else:
-                fig = px.line(
-                    filtered_data, 
-                    x=x_axis, 
-                    y=y_axis,
-                    title=plot_title,
-                    height=plot_height
-                )
-                
-        elif plot_type == "Bar Chart":
-            if color_by != "None" and color_by in filtered_data.columns:
-                fig = px.bar(
-                    filtered_data, 
-                    x=x_axis, 
-                    y=y_axis, 
-                    color=color_by,
-                    title=plot_title,
-                    height=plot_height
-                )
-            else:
-                fig = px.bar(
-                    filtered_data, 
-                    x=x_axis, 
-                    y=y_axis,
-                    title=plot_title,
-                    height=plot_height
-                )
-                
-        elif plot_type == "Histogram":
-            fig = px.histogram(
-                filtered_data, 
-                x=x_axis,
-                title=plot_title,
-                height=plot_height
-            )
-            
-        elif plot_type == "Box Plot":
-            if color_by != "None" and color_by in filtered_data.columns:
-                fig = px.box(
-                    filtered_data, 
-                    x=color_by, 
-                    y=y_axis,
-                    title=plot_title,
-                    height=plot_height
-                )
-            else:
-                fig = px.box(
-                    filtered_data, 
-                    y=y_axis,
-                    title=plot_title,
-                    height=plot_height
-                )
-        
-        # Update layout
-        if fig:
-            fig.update_layout(
-                showlegend=True,
-                xaxis_showgrid=show_grid,
-                yaxis_showgrid=show_grid
-            )
-            
-        st.plotly_chart(fig, use_container_width=True)
-        
-    except Exception as e:
-        st.error(f"Error creating plot: {str(e)}")
-        st.info("Please check your parameter selections and try again.")
+    st.subheader("Selection Summary")
+    st.write(f"**Read-out:** {selected_readout}")
+    st.write(f"**Compounds:** {len(selected_compounds)}")
+    st.write(f"**Measurements:** {len(selected_measurements)}")
+    st.write(f"**Screens:** {len(available_screens)}")
 
 with col2:
-    st.subheader("Data Summary")
-    
-    # Display data summary
-    st.write(f"**Dataset:** {dataset_option}")
-    st.write(f"**Rows:** {len(filtered_data):,}")
-    st.write(f"**Columns:** {len(filtered_data.columns)}")
-    
-    # Show basic statistics for numeric columns
-    numeric_cols = filtered_data.select_dtypes(include=[np.number]).columns
-    if len(numeric_cols) > 0:
-        st.write("**Numeric Summary:**")
-        summary_stats = filtered_data[numeric_cols].describe()
-        st.dataframe(summary_stats, use_container_width=True)
+    st.subheader("Data Points")
+    st.write(f"**Total rows:** {len(filtered_data):,}")
+    concentration_range = filtered_data['concentration'].agg(['min', 'max'])
+    st.write(f"**Concentration range:** {concentration_range['min']:.3f} - {concentration_range['max']:.1f}")
+
+with col3:
+    st.subheader("Selected Compounds")
+    for compound in selected_compounds:
+        compound_rows = len(filtered_data[filtered_data['compound'] == compound])
+        st.write(f"**{compound}:** {compound_rows} data points")
 
 # Data preview section
 st.markdown("---")
 st.subheader("Data Preview")
 
-# Show/hide data preview
-show_data = st.checkbox("Show raw data", value=False)
+show_data = st.checkbox("Show filtered data", value=False)
 
 if show_data:
-    # Add search functionality
-    search_term = st.text_input("Search in data:", "")
+    # Display options
+    col1, col2 = st.columns(2)
+    with col1:
+        rows_per_page = st.selectbox("Rows per page:", [25, 50, 100, 200], index=1)
+    with col2:
+        sort_by = st.selectbox(
+            "Sort by:", 
+            ['compound', 'concentration', 'measurement_name', 'average', 'screen'],
+            index=1
+        )
     
-    display_data = filtered_data
-    if search_term:
-        # Search across all string columns
-        string_cols = filtered_data.select_dtypes(include=['object']).columns
-        mask = pd.Series([False] * len(filtered_data))
-        for col in string_cols:
-            mask |= filtered_data[col].astype(str).str.contains(search_term, case=False, na=False)
-        display_data = filtered_data[mask]
-    
-    # Pagination
-    rows_per_page = st.selectbox("Rows per page:", [10, 25, 50, 100], index=1)
+    # Sort and paginate data
+    display_data = filtered_data.sort_values(sort_by)
     
     if len(display_data) > 0:
         total_pages = (len(display_data) - 1) // rows_per_page + 1
@@ -240,21 +260,25 @@ if show_data:
         start_idx = (page - 1) * rows_per_page
         end_idx = start_idx + rows_per_page
         
+        # Format the data for display
+        display_columns = ['screen', 'compound', 'concentration', 'measurement_name', 'average', 'SEM', 'STDEV']
+        page_data = display_data[display_columns].iloc[start_idx:end_idx].copy()
+        
+        # Round numerical columns for better display
+        for col in ['concentration', 'average', 'SEM', 'STDEV']:
+            if col in page_data.columns:
+                page_data[col] = page_data[col].round(3)
+        
         st.dataframe(
-            display_data.iloc[start_idx:end_idx], 
+            page_data, 
             use_container_width=True,
             hide_index=True
         )
         
         st.write(f"Showing {start_idx + 1}-{min(end_idx, len(display_data))} of {len(display_data)} rows")
     else:
-        st.info("No data matches your search criteria.")
+        st.info("No data matches your current selection.")
 
 # Footer
 st.markdown("---")
-st.markdown("*Built with Streamlit and Plotly*")
-
-# Refresh button
-if st.sidebar.button("Refresh Data"):
-    st.session_state.data = generate_sample_data()
-    st.rerun()
+st.markdown("*Compound Analysis Dashboard - Built with Streamlit and Plotly*")
