@@ -8,96 +8,21 @@ from data_generator import generate_sample_data
 # Configure the page
 st.set_page_config(
     page_title="Interactive Dashboard",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# Custom CSS for blue controls and white background
-st.markdown("""
-<style>
-    /* Main content area background */
-    .main .block-container {
-        background-color: #ffffff;
-        padding-top: 2rem;
-    }
-    
-    /* Sidebar styling */
-    .css-1d391kg {
-        background-color: #f0f7ff !important;
-    }
-    
-    .css-1v3fvcr {
-        background-color: #f0f7ff !important;
-    }
-    
-    /* Sidebar header styling */
-    .css-1v3fvcr h1, .css-1v3fvcr h2, .css-1v3fvcr h3 {
-        color: #1f4788 !important;
-        font-weight: 600;
-    }
-    
-    /* Select box styling */
-    .stSelectbox > div > div {
-        background-color: #ffffff !important;
-        border: 2px solid #4a90e2 !important;
-    }
-    
-    /* Button styling */
-    .stButton > button {
-        background-color: #4a90e2 !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 5px !important;
-        font-weight: 500 !important;
-    }
-    
-    .stButton > button:hover {
-        background-color: #357abd !important;
-        color: white !important;
-    }
-    
-    /* Slider styling */
-    .stSlider > div > div > div > div {
-        background-color: #4a90e2 !important;
-    }
-    
-    /* Checkbox styling */
-    .stCheckbox > label > div {
-        background-color: #4a90e2 !important;
-    }
-    
-    /* Text input styling */
-    .stTextInput > div > div > input {
-        border: 2px solid #4a90e2 !important;
-    }
-    
-    /* Multiselect styling */
-    .stMultiSelect > div > div {
-        border: 2px solid #4a90e2 !important;
-    }
-    
-    /* Number input styling */
-    .stNumberInput > div > div > input {
-        border: 2px solid #4a90e2 !important;
-    }
-    
-    /* Hide streamlit menu and footer */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-</style>
-""", unsafe_allow_html=True)
 
 # Initialize session state for data persistence
 if 'data' not in st.session_state:
     st.session_state.data = generate_sample_data()
 
 # Main title
-st.title("Interactive Dashboard")
+st.title("📊 Interactive Dashboard")
 st.markdown("---")
 
 # Sidebar controls
-st.sidebar.header("Dashboard Controls")
+st.sidebar.header("🎛️ Dashboard Controls")
 
 # Dataset selection
 dataset_option = st.sidebar.selectbox(
@@ -117,14 +42,7 @@ plot_type = st.sidebar.selectbox(
 current_data = st.session_state.data[dataset_option.lower().replace(' ', '_')]
 
 # Dynamic controls based on dataset
-st.sidebar.subheader("Plot Parameters")
-
-# Initialize variables with defaults
-x_axis = current_data.columns.tolist()[0] if len(current_data.columns) > 0 else None
-y_axis = current_data.columns.tolist()[1] if len(current_data.columns) > 1 else current_data.columns.tolist()[0]
-color_by = "None"
-stock_filter = []
-city_filter = []
+st.sidebar.subheader("📈 Plot Parameters")
 
 if dataset_option == "Sales Data":
     x_axis = st.sidebar.selectbox("X-Axis:", current_data.columns.tolist(), index=0)
@@ -152,7 +70,7 @@ elif dataset_option == "Weather Data":
     color_by = "city"
 
 # Additional plot customization
-st.sidebar.subheader("Appearance")
+st.sidebar.subheader("🎨 Appearance")
 plot_title = st.sidebar.text_input("Plot Title:", value=f"{dataset_option} - {plot_type}")
 plot_height = st.sidebar.slider("Plot Height:", 400, 800, 600)
 show_grid = st.sidebar.checkbox("Show Grid", value=True)
@@ -169,7 +87,7 @@ elif dataset_option == "Weather Data" and city_filter:
 col1, col2 = st.columns([3, 1])
 
 with col1:
-    st.subheader(f"{plot_title}")
+    st.subheader(f"📊 {plot_title}")
     
     # Create the plot based on selection
     fig = None
@@ -274,7 +192,7 @@ with col1:
         st.info("Please check your parameter selections and try again.")
 
 with col2:
-    st.subheader("Data Summary")
+    st.subheader("📋 Data Summary")
     
     # Display data summary
     st.write(f"**Dataset:** {dataset_option}")
@@ -290,7 +208,7 @@ with col2:
 
 # Data preview section
 st.markdown("---")
-st.subheader("Data Preview")
+st.subheader("🔍 Data Preview")
 
 # Show/hide data preview
 show_data = st.checkbox("Show raw data", value=False)
@@ -330,9 +248,9 @@ if show_data:
 
 # Footer
 st.markdown("---")
-st.markdown("*Built with Streamlit and Plotly*")
+st.markdown("*Built with Streamlit and Plotly* 🚀")
 
 # Refresh button
-if st.sidebar.button("Refresh Data"):
+if st.sidebar.button("🔄 Refresh Data"):
     st.session_state.data = generate_sample_data()
     st.rerun()
