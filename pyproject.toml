@@ -1,11 +1,11 @@
 [project]
-name = "repl-nix-workspace"
+name = "streamlit-compound-dashboard"
 version = "0.1.0"
-description = "Add your description here"
-requires-python = ">=3.11"
+description = "Interactive scientific data visualization dashboard"
+requires-python = ">=3.8"
 dependencies = [
-    "numpy>=2.2.6",
-    "pandas>=2.3.0",
-    "plotly>=6.1.2",
-    "streamlit>=1.45.1",
+    "streamlit>=1.28.0,<2.0.0",
+    "pandas>=1.5.0,<3.0.0",
+    "plotly>=5.15.0,<6.0.0",
+    "numpy>=1.21.0,<2.0.0",
 ]

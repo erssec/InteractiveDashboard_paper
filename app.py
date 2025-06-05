@@ -12,6 +12,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Add memory optimization
+@st.cache_data
+def get_filtered_data(readout, compounds, measurements):
+    """Cache filtered data to improve performance."""
+    readout_data = data[data['read-out'] == readout]
+    compound_data = readout_data[readout_data['compound'].isin(compounds)]
+    filtered_data = compound_data[compound_data['measurement_name'].isin(measurements)]
+    return filtered_data
+
 @st.cache_data
 def load_data():
     """Load and prepare the experimental data."""
@@ -19,6 +28,21 @@ def load_data():
     # Drop the unnamed index column
     if 'Unnamed: 0' in df.columns:
         df = df.drop(columns=['Unnamed: 0'])
+    
+    # Optimize data types to reduce memory usage
+    for col in ['SEM', 'STDEV', 'average', 'concentration']:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], downcast='float')
+    
+    for col in ['screen']:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], downcast='integer')
+    
+    # Convert string columns to category to save memory
+    for col in ['read-out', 'compound', 'measurement_name']:
+        if col in df.columns:
+            df[col] = df[col].astype('category')
+    
     return df
 
 # Load data
@@ -73,8 +97,8 @@ if not selected_measurements:
     st.warning("Please select at least one measurement to display.")
     st.stop()
 
-# Filter data by measurements
-filtered_data = compound_data[compound_data['measurement_name'].isin(selected_measurements)]
+# Use cached filtering function
+filtered_data = get_filtered_data(selected_readout, selected_compounds, selected_measurements)
 
 # Get unique screens for this read-out and compound combination
 available_screens = sorted(filtered_data['screen'].unique())
