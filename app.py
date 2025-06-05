@@ -79,6 +79,10 @@ filtered_data = compound_data[compound_data['measurement_name'].isin(selected_me
 # Get unique screens for this read-out and compound combination
 available_screens = sorted(filtered_data['screen'].unique())
 
+# Get all unique concentrations across the filtered data and sort them
+all_concentrations = sorted(filtered_data['concentration'].unique())
+concentration_labels = [str(c) for c in all_concentrations]
+
 # Create color mapping for measurements
 colors = px.colors.qualitative.Set1[:len(selected_measurements)]
 measurement_colors = dict(zip(selected_measurements, colors))
@@ -109,9 +113,14 @@ if len(available_screens) > 1:
                     # Create trace name
                     trace_name = f"{compound} - {measurement}"
                     
+                    # Map concentrations to x-axis positions
+                    concentrations = compound_measurement_data['concentration'].values
+                    x_positions = [all_concentrations.index(c) for c in concentrations]
+                    conc_labels = [str(c) for c in concentrations]
+                    
                     fig.add_trace(
                         go.Scatter(
-                            x=compound_measurement_data['concentration'].astype(str),
+                            x=x_positions,
                             y=compound_measurement_data['average'],
                             error_y=dict(
                                 type='data',
@@ -122,7 +131,13 @@ if len(available_screens) > 1:
                             name=trace_name,
                             line=dict(color=measurement_colors[measurement]),
                             legendgroup=measurement,
-                            showlegend=(col_idx == 0)  # Only show legend for first subplot
+                            showlegend=(col_idx == 0),  # Only show legend for first subplot
+                            customdata=conc_labels,
+                            hovertemplate='<b>%{fullData.name}</b><br>' +
+                                        'Concentration: %{customdata}<br>' +
+                                        '% Change: %{y:.2f}<br>' +
+                                        'SEM: %{error_y.array:.2f}<br>' +
+                                        '<extra></extra>'
                         ),
                         row=1, 
                         col=col_idx + 1
@@ -144,7 +159,14 @@ if len(available_screens) > 1:
     
     # Update x and y axis labels
     for i in range(1, len(available_screens) + 1):
-        fig.update_xaxes(title_text="Concentration", row=1, col=i)
+        fig.update_xaxes(
+            title_text="Concentration", 
+            tickmode='array',
+            tickvals=list(range(len(all_concentrations))),
+            ticktext=concentration_labels,
+            row=1, 
+            col=i
+        )
         fig.update_yaxes(title_text="% Change", row=1, col=i)
 
 else:
@@ -186,7 +208,12 @@ else:
     fig.update_layout(
         height=600,
         title=f"{selected_readout.title()} Read-out Analysis - Screen {screen}",
-        xaxis_title="Concentration",
+        xaxis=dict(
+            title="Concentration",
+            tickmode='array',
+            tickvals=list(range(len(all_concentrations))),
+            ticktext=concentration_labels
+        ),
         yaxis_title="% Change",
         showlegend=True,
         legend=dict(
