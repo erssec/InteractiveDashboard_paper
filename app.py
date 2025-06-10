@@ -218,9 +218,11 @@ if pool_screens:
                                     width=3
                                 ),
                                 showlegend=False,
+                                hoverinfo='all',
                                 hovertemplate=f'<b>{compound} Mean</b><br>' +
                                             f'Concentration: {concentration_labels[x_pos]}<br>' +
                                             f'Mean % Change: {mean_value:.2f}<br>' +
+                                            f'Data points: {len(conc_data)}<br>' +
                                             '<extra></extra>'
                             ),
                             row=measurement_idx + 1,
