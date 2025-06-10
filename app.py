@@ -119,6 +119,10 @@ filtered_data = get_filtered_data(selected_readout, selected_compounds, selected
 # Get unique screens for this read-out and compound combination
 available_screens = sorted(filtered_data['screen'].unique())
 
+# Add pooled screening option
+st.sidebar.subheader("Screening Display")
+pool_screens = st.sidebar.checkbox("Pool all screenings", value=False, help="Combine data from all screens and show individual points with mean lines")
+
 # Get all unique concentrations across the filtered data and sort them
 all_concentrations = sorted(filtered_data['concentration'].unique())
 concentration_labels = [str(c) for c in all_concentrations]
@@ -127,121 +131,237 @@ concentration_labels = [str(c) for c in all_concentrations]
 colors = px.colors.qualitative.Set1[:len(selected_compounds)]
 compound_colors = dict(zip(selected_compounds, colors))
 
-# Create separate plots for each measurement (arranged in rows)
-num_measurements = len(selected_measurements)
-num_screens = len(available_screens)
-
-# Create subplots: rows for measurements, columns for screens
-fig = make_subplots(
-    rows=num_measurements,
-    cols=num_screens,
-    subplot_titles=[f"Screen {screen}" for screen in available_screens] if num_screens > 1 else None,
-    vertical_spacing=0.08,
-    horizontal_spacing=0.05,
-    shared_xaxes=True,
-    shared_yaxes=False
-)
-
-# Track which compounds have been added to legend (only show once)
-legend_compounds = set()
-
-for measurement_idx, measurement in enumerate(selected_measurements):
-    for screen_idx, screen in enumerate(available_screens):
-        screen_data = filtered_data[filtered_data['screen'] == screen]
-        measurement_data = screen_data[screen_data['measurement_name'] == measurement]
+if pool_screens:
+    # Pooled screening mode: combine all screens, show individual points and means
+    num_measurements = len(selected_measurements)
+    
+    # Create subplots: one column, rows for measurements
+    fig = make_subplots(
+        rows=num_measurements,
+        cols=1,
+        vertical_spacing=0.08,
+        shared_xaxes=True,
+        shared_yaxes=False
+    )
+    
+    # Track which compounds have been added to legend
+    legend_compounds = set()
+    
+    for measurement_idx, measurement in enumerate(selected_measurements):
+        measurement_data = filtered_data[filtered_data['measurement_name'] == measurement]
         
         for compound in selected_compounds:
             compound_measurement_data = measurement_data[measurement_data['compound'] == compound]
             
             if not compound_measurement_data.empty:
-                # Sort by concentration for proper line plotting
-                compound_measurement_data = compound_measurement_data.sort_values('concentration')
-                
-                # Map concentrations to x-axis positions
-                concentrations = compound_measurement_data['concentration'].values
-                x_positions = [all_concentrations.index(c) for c in concentrations]
-                conc_labels = [str(c) for c in concentrations]
-                
                 # Show legend only for the first occurrence of each compound
                 show_in_legend = compound not in legend_compounds
                 if show_in_legend:
                     legend_compounds.add(compound)
                 
-                fig.add_trace(
-                    go.Scatter(
-                        x=x_positions,
-                        y=compound_measurement_data['average'],
-                        error_y=dict(
-                            type='data',
-                            array=compound_measurement_data['SEM'],
-                            visible=True
-                        ),
-                        mode='lines+markers',
-                        name=compound,
-                        line=dict(
-                            color=compound_colors[compound],
-                            width=2
-                        ),
-                        marker=dict(
-                            size=6
-                        ),
-                        legendgroup=compound,
-                        showlegend=show_in_legend,
-                        customdata=conc_labels,
-                        hovertemplate='<b>%{fullData.name}</b><br>' +
-                                    'Concentration: %{customdata}<br>' +
-                                    '% Change: %{y:.2f}<br>' +
-                                    'SEM: %{error_y.array:.2f}<br>' +
-                                    '<extra></extra>'
-                    ),
-                    row=measurement_idx + 1,
-                    col=screen_idx + 1
-                )
-
-# Calculate appropriate height based on number of measurements
-plot_height = max(400, 250 * num_measurements)
-
-# Update layout
-fig.update_layout(
-    height=plot_height,
-    title_text=f"{selected_readout.title()} Read-out Analysis",
-    showlegend=True,
-    legend=dict(
-        orientation="v",
-        yanchor="top",
-        y=1,
-        xanchor="left",
-        x=1.02
-    )
-)
-
-# Add measurement labels on the left side and update axes
-for measurement_idx, measurement in enumerate(selected_measurements):
-    # Add measurement label as y-axis title for the leftmost subplot
-    fig.update_yaxes(
-        title_text=f"{measurement}<br>% Change",
-        row=measurement_idx + 1,
-        col=1
+                # Plot individual data points from all screens
+                for concentration in all_concentrations:
+                    conc_data = compound_measurement_data[compound_measurement_data['concentration'] == concentration]
+                    if not conc_data.empty:
+                        x_pos = all_concentrations.index(concentration)
+                        
+                        # Add individual points (scatter)
+                        fig.add_trace(
+                            go.Scatter(
+                                x=[x_pos] * len(conc_data),
+                                y=conc_data['average'],
+                                mode='markers',
+                                name=compound if show_in_legend else None,
+                                marker=dict(
+                                    color=compound_colors[compound],
+                                    size=4,
+                                    opacity=0.6
+                                ),
+                                legendgroup=compound,
+                                showlegend=show_in_legend,
+                                hovertemplate=f'<b>{compound}</b><br>' +
+                                            f'Concentration: {concentration}<br>' +
+                                            '% Change: %{y:.2f}<br>' +
+                                            '<extra></extra>'
+                            ),
+                            row=measurement_idx + 1,
+                            col=1
+                        )
+                        
+                        # Add mean line
+                        mean_value = conc_data['average'].mean()
+                        fig.add_trace(
+                            go.Scatter(
+                                x=[x_pos - 0.2, x_pos + 0.2],
+                                y=[mean_value, mean_value],
+                                mode='lines',
+                                line=dict(
+                                    color=compound_colors[compound],
+                                    width=3
+                                ),
+                                showlegend=False,
+                                hovertemplate=f'<b>{compound} Mean</b><br>' +
+                                            f'Concentration: {concentration}<br>' +
+                                            f'Mean % Change: {mean_value:.2f}<br>' +
+                                            '<extra></extra>'
+                            ),
+                            row=measurement_idx + 1,
+                            col=1
+                        )
+                        
+                        show_in_legend = False  # Only show legend for first trace
+    
+    # Calculate appropriate height
+    plot_height = max(400, 250 * num_measurements)
+    
+    # Update layout
+    fig.update_layout(
+        height=plot_height,
+        title_text=f"{selected_readout.title()} Read-out Analysis (Pooled Screens)",
+        showlegend=True,
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=1,
+            xanchor="left",
+            x=1.02
+        )
     )
     
-    # Update other y-axes in the same row (if multiple screens)
-    for screen_idx in range(1, num_screens):
+    # Update axes
+    for measurement_idx, measurement in enumerate(selected_measurements):
         fig.update_yaxes(
-            title_text="% Change",
+            title_text=f"{measurement}<br>% Change",
             row=measurement_idx + 1,
-            col=screen_idx + 1
+            col=1
         )
-
-# Update x-axes (only for bottom row)
-for screen_idx in range(num_screens):
+    
+    # Update x-axis for bottom row only
     fig.update_xaxes(
         title_text="Concentration",
         tickmode='array',
         tickvals=list(range(len(all_concentrations))),
         ticktext=concentration_labels,
         row=num_measurements,
-        col=screen_idx + 1
+        col=1
     )
+
+else:
+    # Original mode: separate plots for each measurement, separate columns for screens
+    num_measurements = len(selected_measurements)
+    num_screens = len(available_screens)
+    
+    # Create subplots: rows for measurements, columns for screens
+    fig = make_subplots(
+        rows=num_measurements,
+        cols=num_screens,
+        subplot_titles=[f"Screen {screen}" for screen in available_screens] if num_screens > 1 else None,
+        vertical_spacing=0.08,
+        horizontal_spacing=0.05,
+        shared_xaxes=True,
+        shared_yaxes=False
+    )
+    
+    # Track which compounds have been added to legend (only show once)
+    legend_compounds = set()
+    
+    for measurement_idx, measurement in enumerate(selected_measurements):
+        for screen_idx, screen in enumerate(available_screens):
+            screen_data = filtered_data[filtered_data['screen'] == screen]
+            measurement_data = screen_data[screen_data['measurement_name'] == measurement]
+            
+            for compound in selected_compounds:
+                compound_measurement_data = measurement_data[measurement_data['compound'] == compound]
+                
+                if not compound_measurement_data.empty:
+                    # Sort by concentration for proper line plotting
+                    compound_measurement_data = compound_measurement_data.sort_values('concentration')
+                    
+                    # Map concentrations to x-axis positions
+                    concentrations = compound_measurement_data['concentration'].values
+                    x_positions = [all_concentrations.index(c) for c in concentrations]
+                    conc_labels = [str(c) for c in concentrations]
+                    
+                    # Show legend only for the first occurrence of each compound
+                    show_in_legend = compound not in legend_compounds
+                    if show_in_legend:
+                        legend_compounds.add(compound)
+                    
+                    fig.add_trace(
+                        go.Scatter(
+                            x=x_positions,
+                            y=compound_measurement_data['average'],
+                            error_y=dict(
+                                type='data',
+                                array=compound_measurement_data['SEM'],
+                                visible=True
+                            ),
+                            mode='lines+markers',
+                            name=compound,
+                            line=dict(
+                                color=compound_colors[compound],
+                                width=2
+                            ),
+                            marker=dict(
+                                size=6
+                            ),
+                            legendgroup=compound,
+                            showlegend=show_in_legend,
+                            customdata=conc_labels,
+                            hovertemplate='<b>%{fullData.name}</b><br>' +
+                                        'Concentration: %{customdata}<br>' +
+                                        '% Change: %{y:.2f}<br>' +
+                                        'SEM: %{error_y.array:.2f}<br>' +
+                                        '<extra></extra>'
+                        ),
+                        row=measurement_idx + 1,
+                        col=screen_idx + 1
+                    )
+    
+    # Calculate appropriate height based on number of measurements
+    plot_height = max(400, 250 * num_measurements)
+    
+    # Update layout
+    fig.update_layout(
+        height=plot_height,
+        title_text=f"{selected_readout.title()} Read-out Analysis",
+        showlegend=True,
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=1,
+            xanchor="left",
+            x=1.02
+        )
+    )
+    
+    # Add measurement labels on the left side and update axes
+    for measurement_idx, measurement in enumerate(selected_measurements):
+        # Add measurement label as y-axis title for the leftmost subplot
+        fig.update_yaxes(
+            title_text=f"{measurement}<br>% Change",
+            row=measurement_idx + 1,
+            col=1
+        )
+        
+        # Update other y-axes in the same row (if multiple screens)
+        for screen_idx in range(1, num_screens):
+            fig.update_yaxes(
+                title_text="% Change",
+                row=measurement_idx + 1,
+                col=screen_idx + 1
+            )
+    
+    # Update x-axes (only for bottom row)
+    for screen_idx in range(num_screens):
+        fig.update_xaxes(
+            title_text="Concentration",
+            tickmode='array',
+            tickvals=list(range(len(all_concentrations))),
+            ticktext=concentration_labels,
+            row=num_measurements,
+            col=screen_idx + 1
+        )
 
 # Display the plot
 st.plotly_chart(fig, use_container_width=True)
