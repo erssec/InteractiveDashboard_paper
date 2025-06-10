@@ -236,15 +236,16 @@ if pool_screens:
             col=1
         )
     
-    # Update x-axis for bottom row only
-    fig.update_xaxes(
-        title_text="Concentration",
-        tickmode='array',
-        tickvals=list(range(len(all_concentrations))),
-        ticktext=concentration_labels,
-        row=num_measurements,
-        col=1
-    )
+    # Update x-axis for all rows
+    for measurement_idx in range(num_measurements):
+        fig.update_xaxes(
+            title_text="Concentration",
+            tickmode='array',
+            tickvals=list(range(len(all_concentrations))),
+            ticktext=concentration_labels,
+            row=measurement_idx + 1,
+            col=1
+        )
 
 else:
     # Original mode: separate plots for each measurement, separate columns for screens
@@ -352,16 +353,17 @@ else:
                 col=screen_idx + 1
             )
     
-    # Update x-axes (only for bottom row)
-    for screen_idx in range(num_screens):
-        fig.update_xaxes(
-            title_text="Concentration",
-            tickmode='array',
-            tickvals=list(range(len(all_concentrations))),
-            ticktext=concentration_labels,
-            row=num_measurements,
-            col=screen_idx + 1
-        )
+    # Update x-axes for all rows
+    for measurement_idx in range(num_measurements):
+        for screen_idx in range(num_screens):
+            fig.update_xaxes(
+                title_text="Concentration",
+                tickmode='array',
+                tickvals=list(range(len(all_concentrations))),
+                ticktext=concentration_labels,
+                row=measurement_idx + 1,
+                col=screen_idx + 1
+            )
 
 # Display the plot
 st.plotly_chart(fig, use_container_width=True)
