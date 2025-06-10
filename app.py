@@ -115,16 +115,11 @@ compound_colors = dict(zip(selected_compounds, colors))
 num_measurements = len(selected_measurements)
 num_screens = len(available_screens)
 
-# Create row and column titles
-row_titles = selected_measurements
-col_titles = [f"Screen {screen}" for screen in available_screens] if num_screens > 1 else None
-
 # Create subplots: rows for measurements, columns for screens
 fig = make_subplots(
     rows=num_measurements,
     cols=num_screens,
-    row_titles=row_titles,
-    column_titles=col_titles,
+    subplot_titles=[f"Screen {screen}" for screen in available_screens] if num_screens > 1 else None,
     vertical_spacing=0.08,
     horizontal_spacing=0.05,
     shared_xaxes=True,
@@ -204,9 +199,17 @@ fig.update_layout(
     )
 )
 
-# Update y-axis titles for all subplots
-for measurement_idx in range(num_measurements):
-    for screen_idx in range(num_screens):
+# Add measurement labels on the left side and update axes
+for measurement_idx, measurement in enumerate(selected_measurements):
+    # Add measurement label as y-axis title for the leftmost subplot
+    fig.update_yaxes(
+        title_text=f"{measurement}<br>% Change",
+        row=measurement_idx + 1,
+        col=1
+    )
+    
+    # Update other y-axes in the same row (if multiple screens)
+    for screen_idx in range(1, num_screens):
         fig.update_yaxes(
             title_text="% Change",
             row=measurement_idx + 1,
