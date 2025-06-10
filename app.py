@@ -86,11 +86,31 @@ compound_data = readout_data[readout_data['compound'].isin(selected_compounds)]
 
 # 3. Measurement selection
 st.sidebar.subheader("Measurements")
-measurement_options = sorted(compound_data['measurement_name'].unique())
+
+# Define readout-specific measurements
+readout_measurements = {
+    'calcium': ['Rising Slope', 'Falling Slope', 'Pulse Width 10%', 'Pulse Width 90%', 'Area Under the Curve'],
+    'voltage': ['Rising Slope', 'Falling Slope', 'Triangulation', 'Amplitude']
+}
+
+# Get available measurements for the selected readout
+available_measurements = readout_measurements.get(selected_readout.lower(), [])
+compound_measurement_options = sorted(compound_data['measurement_name'].unique())
+
+# Filter to only show measurements that are both available in data and allowed for this readout
+measurement_options = [m for m in available_measurements if m in compound_measurement_options]
+
+# If no measurements are available for this readout, fall back to all available measurements
+if not measurement_options:
+    measurement_options = compound_measurement_options
+    st.sidebar.warning(f"No standard {selected_readout} measurements found. Showing all available measurements.")
 
 selected_measurements = []
+# Default to first 3 measurements or all if fewer than 3
+default_count = min(3, len(measurement_options))
 for measurement in measurement_options:
-    if st.sidebar.checkbox(measurement, value=(measurement in measurement_options[:3])):
+    default_selected = measurement in measurement_options[:default_count]
+    if st.sidebar.checkbox(measurement, value=default_selected):
         selected_measurements.append(measurement)
 
 if not selected_measurements:
