@@ -210,33 +210,32 @@ fig.update_layout(
     )
 )
 
-# Add measurement titles and y-axis labels
+# Add horizontal measurement titles above each row
 for measurement_idx, measurement in enumerate(selected_measurements):
-    if num_screens > 1:
-        # For multiple screens, add measurement name as annotation on the left
-        fig.add_annotation(
-            text=f"<b>{measurement}</b>",
-            xref="paper", yref="paper",
-            x=-0.02, y=1 - (measurement_idx + 0.5) / num_measurements,
-            xanchor="right", yanchor="middle",
-            showarrow=False,
-            font=dict(size=14, color="black"),
-            textangle=-90
-        )
-        
-        # Update y-axis titles for all columns in this row
-        for screen_idx in range(num_screens):
-            fig.update_yaxes(
-                title_text="% Change",
-                row=measurement_idx + 1,
-                col=screen_idx + 1
-            )
-    else:
-        # For single screen, y-axis title includes measurement name
+    # Calculate the y position for the title (above each row)
+    row_height = 1.0 / num_measurements
+    title_y = 1 - (measurement_idx * row_height) + (row_height * 0.15)
+    
+    # Add horizontal title above each measurement row
+    fig.add_annotation(
+        text=f"<b>{measurement}</b>",
+        xref="paper", yref="paper",
+        x=0.5 if num_screens == 1 else 0.45,  # Center for single screen, slightly left for multiple
+        y=title_y,
+        xanchor="center", yanchor="bottom",
+        showarrow=False,
+        font=dict(size=16, color="black"),
+        bgcolor="rgba(255,255,255,0.8)",
+        bordercolor="rgba(0,0,0,0.2)",
+        borderwidth=1
+    )
+    
+    # Update y-axis titles for all columns in this row
+    for screen_idx in range(num_screens):
         fig.update_yaxes(
-            title_text=f"% Change",
+            title_text="% Change",
             row=measurement_idx + 1,
-            col=1
+            col=screen_idx + 1
         )
 
 # Update x-axes (only for bottom row)
