@@ -125,7 +125,25 @@ pool_screens = st.sidebar.checkbox("Pool all screenings", value=False, help="Com
 
 # Get all unique concentrations across the filtered data and sort them
 all_concentrations = sorted(filtered_data['concentration'].unique())
-concentration_labels = [str(c) for c in all_concentrations]
+
+# Create clean categorical labels for concentrations (avoid floating point precision issues)
+def format_concentration(conc):
+    if conc == 0.0:
+        return "0.0"
+    elif abs(conc - 0.03) < 0.001:
+        return "0.03"
+    elif abs(conc - 0.1) < 0.001:
+        return "0.1"
+    elif abs(conc - 0.3) < 0.001:
+        return "0.3"
+    elif abs(conc - 1.0) < 0.001:
+        return "1.0"
+    elif abs(conc - 3.0) < 0.001:
+        return "3.0"
+    else:
+        return f"{conc:.3f}".rstrip('0').rstrip('.')
+
+concentration_labels = [format_concentration(c) for c in all_concentrations]
 
 # Create color mapping for compounds (each compound gets its own color)
 colors = px.colors.qualitative.Set1[:len(selected_compounds)]
@@ -180,7 +198,7 @@ if pool_screens:
                                 legendgroup=compound,
                                 showlegend=show_in_legend,
                                 hovertemplate=f'<b>{compound}</b><br>' +
-                                            f'Concentration: {concentration}<br>' +
+                                            f'Concentration: {concentration_labels[x_pos]}<br>' +
                                             '% Change: %{y:.2f}<br>' +
                                             '<extra></extra>'
                             ),
@@ -201,7 +219,7 @@ if pool_screens:
                                 ),
                                 showlegend=False,
                                 hovertemplate=f'<b>{compound} Mean</b><br>' +
-                                            f'Concentration: {concentration}<br>' +
+                                            f'Concentration: {concentration_labels[x_pos]}<br>' +
                                             f'Mean % Change: {mean_value:.2f}<br>' +
                                             '<extra></extra>'
                             ),
