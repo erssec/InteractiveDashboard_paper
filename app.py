@@ -115,12 +115,23 @@ compound_colors = dict(zip(selected_compounds, colors))
 num_measurements = len(selected_measurements)
 num_screens = len(available_screens)
 
+# Create subplot titles
+if num_screens > 1:
+    # For multiple screens, create titles for each screen in the top row
+    subplot_titles = [f"Screen {screen}" for screen in available_screens]
+    # Add empty titles for other rows
+    for measurement_idx in range(1, num_measurements):
+        subplot_titles.extend([''] * num_screens)
+else:
+    # For single screen, use measurement names as titles
+    subplot_titles = selected_measurements
+
 # Create subplots: rows for measurements, columns for screens
 fig = make_subplots(
     rows=num_measurements,
     cols=num_screens,
-    subplot_titles=[f"Screen {screen}" for screen in available_screens] if num_screens > 1 else None,
-    vertical_spacing=0.08,
+    subplot_titles=subplot_titles,
+    vertical_spacing=0.12,
     horizontal_spacing=0.05,
     shared_xaxes=True,
     shared_yaxes=False
@@ -199,21 +210,33 @@ fig.update_layout(
     )
 )
 
-# Add measurement labels on the left side and update axes
+# Add measurement titles and y-axis labels
 for measurement_idx, measurement in enumerate(selected_measurements):
-    # Add measurement label as y-axis title for the leftmost subplot
-    fig.update_yaxes(
-        title_text=f"{measurement}<br>% Change",
-        row=measurement_idx + 1,
-        col=1
-    )
-    
-    # Update other y-axes in the same row (if multiple screens)
-    for screen_idx in range(1, num_screens):
+    if num_screens > 1:
+        # For multiple screens, add measurement name as annotation on the left
+        fig.add_annotation(
+            text=f"<b>{measurement}</b>",
+            xref="paper", yref="paper",
+            x=-0.02, y=1 - (measurement_idx + 0.5) / num_measurements,
+            xanchor="right", yanchor="middle",
+            showarrow=False,
+            font=dict(size=14, color="black"),
+            textangle=-90
+        )
+        
+        # Update y-axis titles for all columns in this row
+        for screen_idx in range(num_screens):
+            fig.update_yaxes(
+                title_text="% Change",
+                row=measurement_idx + 1,
+                col=screen_idx + 1
+            )
+    else:
+        # For single screen, y-axis title includes measurement name
         fig.update_yaxes(
-            title_text="% Change",
+            title_text=f"% Change",
             row=measurement_idx + 1,
-            col=screen_idx + 1
+            col=1
         )
 
 # Update x-axes (only for bottom row)
