@@ -140,7 +140,7 @@ if pool_screens:
         rows=num_measurements,
         cols=1,
         vertical_spacing=0.08,
-        shared_xaxes=True,
+        shared_xaxes=False,
         shared_yaxes=False
     )
     
@@ -243,6 +243,7 @@ if pool_screens:
             tickmode='array',
             tickvals=list(range(len(all_concentrations))),
             ticktext=concentration_labels,
+            showticklabels=True,
             row=measurement_idx + 1,
             col=1
         )
@@ -259,7 +260,7 @@ else:
         subplot_titles=[f"Screen {screen}" for screen in available_screens] if num_screens > 1 else None,
         vertical_spacing=0.08,
         horizontal_spacing=0.05,
-        shared_xaxes=True,
+        shared_xaxes=False,
         shared_yaxes=False
     )
     
@@ -361,6 +362,7 @@ else:
                 tickmode='array',
                 tickvals=list(range(len(all_concentrations))),
                 ticktext=concentration_labels,
+                showticklabels=True,
                 row=measurement_idx + 1,
                 col=screen_idx + 1
             )
