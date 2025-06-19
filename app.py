@@ -88,8 +88,8 @@ compound_data = readout_data[readout_data['compound'].isin(selected_compounds)]
 st.sidebar.subheader("Measurements")
 
 # Define measurement filters based on read-out type
-calcium_measurements = {'Rising Slope', 'Falling Slope', 'Pulse Width 50%', 'Area Under the Curve'}
-voltage_measurements = {'Pulse Width 10%', 'Pulse Width 50%', 'Pulse Width 90%', 'Rising Slope', 'Falling Slope', 'Triangulation', 'Amplitude'}
+calcium_measurements = {'Rising Slope', 'Beat Rate', 'Pulse Width 50%', 'Falling Slope', 'Amplitude', 'Area Under the Curve'}
+voltage_measurements = {'APD10', 'APD50', 'APD90', 'Rising Slope', 'Falling Slope', 'Triangulation', 'Amplitude', 'Beat Rate'}
 
 # Get available measurements for the current read-out type
 all_measurement_options = set(compound_data['measurement_name'].unique())
